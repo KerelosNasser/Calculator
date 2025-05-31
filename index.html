@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار تفاعلي</title>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --background-color: #e9ecef; /* Light gray background */
+            --card-background-color: #ffffff;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--dark-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-top: 20px; /* Add some padding at the top */
+            box-sizing: border-box;
+        }
+
+        header {
+            background: linear-gradient(90deg, var(--primary-color), #0056b3); /* Gradient header */
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            width: 100%;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px; /* Increased margin */
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2em;
+            font-weight: 600; /* Bolder title */
+        }
+
+        main {
+            width: 90%;
+            max-width: 750px;
+            padding: 25px; /* Increased padding */
+            background-color: var(--card-background-color);
+            box-shadow: var(--box-shadow);
+            border-radius: var(--border-radius);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        #quiz-container, #results-container, #loading-message, #error-message {
+            text-align: center;
+        }
+        
+        #loading-message, #error-message {
+            font-size: 1.2em;
+            color: var(--secondary-color);
+            padding: 30px 20px; /* More padding for messages */
+            background-color: #f0f0f0;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+        }
+        #error-message {
+            color: var(--danger-color);
+            background-color: #fddede;
+        }
+
+
+        #question-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px; /* Increased margin */
+            padding: 10px 15px; 
+            background-color: #f8f9fa; 
+            border-radius: var(--border-radius);
+            border: 1px solid #dee2e6; /* Subtle border */
+        }
+        
+        #question-number, #score-display {
+            font-size: 1.05em; 
+            color: var(--dark-color); /* Darker text for better contrast */
+            font-weight: 500;
+        }
+        
+        #question-text {
+            font-size: 1.4em; 
+            margin-bottom: 30px; /* Increased margin */
+            color: var(--dark-color);
+            line-height: 1.7; /* Improved line height */
+            font-weight: 500;
+        }
+
+        #options-container {
+            display: grid;
+            grid-template-columns: 1fr; 
+            gap: 15px; 
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            background-color: var(--card-background-color);
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            padding: 15px; 
+            font-size: 1.05em; /* Slightly larger font */
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s ease; /* Smooth transition for all properties */
+            text-align: right; 
+            font-weight: 500;
+        }
+
+        .option-btn:hover:not([disabled]) {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px); /* Slight lift on hover */
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+        }
+        
+        .option-btn:active:not([disabled]) {
+             transform: translateY(0px); /* Press down effect */
+        }
+
+
+        .option-btn.correct {
+            background-color: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+            animation: pulse 0.5s;
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+            animation: pulse 0.5s;
+        }
+        
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+        .option-btn.disabled:not(.correct):not(.incorrect) {
+            opacity: 0.6; /* Dim unselected, non-correct/incorrect options */
+        }
+
+
+        #feedback-container {
+            margin-top: 20px; 
+            padding: 15px; 
+            border-radius: var(--border-radius);
+            font-size: 1.1em; 
+            animation: fadeIn 0.4s;
+            font-weight: 500;
+        }
+
+        #feedback-container.correct-feedback {
+            background-color: #d4edda; /* Lighter success green */
+            color: #155724; /* Darker success text */
+            border: 1px solid #c3e6cb;
+        }
+
+        #feedback-container.incorrect-feedback {
+            background-color: #f8d7da; /* Lighter danger red */
+            color: #721c24; /* Darker danger text */
+            border: 1px solid #f5c6cb;
+        }
+
+        #correct-info {
+            margin-top: 10px; 
+            font-style: normal; /* Less italic, more direct */
+            color: #495057; /* Softer color */
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+         #correct-info .citation {
+            font-size: 0.8em;
+            color: #6c757d; /* Secondary color for citation */
+            display: block;
+            margin-top: 6px;
+        }
+
+
+        #navigation-buttons {
+            margin-top: 30px; 
+            display: flex;
+            justify-content: center; 
+        }
+        
+        #next-btn, #restart-quiz-btn {
+            background-color: var(--primary-color); 
+            color: white;
+            border: none;
+            padding: 14px 30px; /* Larger padding */
+            font-size: 1.05em; /* Larger font */
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            min-width: 150px; 
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #next-btn:hover, #restart-quiz-btn:hover {
+            background-color: #0056b3; 
+            transform: translateY(-2px);
+        }
+         #next-btn:active, #restart-quiz-btn:active {
+             transform: translateY(0px); /* Press down effect */
+        }
+        
+        #progress-bar-container {
+            width: 100%; 
+            margin-bottom: 25px; 
+            background-color: #dee2e6; /* Lighter background for progress bar */
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            height: 22px; /* Slightly taller */
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%; 
+            background: linear-gradient(90deg, var(--success-color), #218838); /* Gradient progress */
+            border-radius: var(--border-radius); /* Keep consistent radius */
+            transition: width 0.4s ease-in-out; /* Smoother transition */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.85em; 
+            font-weight: 500;
+        }
+
+        #results-container h2 {
+            color: var(--primary-color);
+            font-size: 1.8em; 
+            margin-bottom: 15px;
+        }
+        #results-container p {
+            font-size: 1.2em; 
+            margin-bottom: 25px; 
+            line-height: 1.6;
+        }
+
+        footer {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            text-align: center;
+            padding: 20px; /* More padding */
+            width: 100%;
+            margin-top: auto; 
+            font-size: 0.9em;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.6em; }
+            #question-text { font-size: 1.2em; }
+            .option-btn { font-size: 0.95em; padding: 12px; }
+            #feedback-container { font-size: 1em; }
+            #next-btn, #restart-quiz-btn { padding: 12px 25px; font-size: 1em; }
+            main { padding: 20px; }
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>الاختبار التفاعلي</h1>
+    </header>
+
+    <main>
+        <div id="loading-message">⏳ جاري تحميل الأسئلة...</div>
+        <div id="error-message" style="display: none;"></div>
+        
+        <div id="quiz-container" style="display: none;">
+            <div id="question-info">
+                 <p id="question-number"></p>
+                 <p id="score-display"></p>
+            </div>
+            <div id="progress-bar-container">
+                <div id="progress-bar">0%</div>
+            </div>
+            <h2 id="question-text"></h2>
+            <div id="options-container">
+                </div>
+            <div id="feedback-container" style="display: none;">
+                </div>
+            <div id="navigation-buttons">
+                <button id="next-btn" style="display: none;">السؤال التالي &raquo;</button>
+            </div>
+        </div>
+        
+        <div id="results-container" style="display: none;">
+            <h2>🎉 نتائج الاختبار 🎉</h2>
+            <p id="final-score"></p>
+            <p id="final-message"></p>
+            <button id="restart-quiz-btn">إعادة الاختبار 🔁</button>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 - منصة اختبارات تفاعلية</p>
+    </footer>
+
+    <script>
+        const loadingMessageEl = document.getElementById('loading-message');
+        const errorMessageEl = document.getElementById('error-message');
+        const quizContainerEl = document.getElementById('quiz-container');
+        const resultsContainerEl = document.getElementById('results-container');
+        
+        const questionNumberEl = document.getElementById('question-number');
+        const scoreDisplayEl = document.getElementById('score-display');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainerEl = document.getElementById('options-container');
+        const feedbackContainerEl = document.getElementById('feedback-container');
+        const nextBtnEl = document.getElementById('next-btn');
+        const progressBarEl = document.getElementById('progress-bar');
+
+        const finalScoreEl = document.getElementById('final-score');
+        const finalMessageEl = document.getElementById('final-message');
+        const restartQuizBtnEl = document.getElementById('restart-quiz-btn');
+
+        let allQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        // Function to safely escape HTML to prevent XSS
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Function to format correctInfo, potentially with citation
+        function formatCorrectInfo(info, citation) {
+            let formattedInfo = escapeHtml(info);
+            if (citation) {
+                formattedInfo += ` <span class="citation">[${escapeHtml(citation)}]</span>`;
+            }
+            return formattedInfo;
+        }
+        
+        async function fetchQuestions() {
+            try {
+                const response = await fetch('questions.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}. تأكد من أن ملف 'questions.json' موجود في نفس المجلد وأن الخادم المحلي يعمل.`);
+                }
+                allQuestions = await response.json();
+
+                if (allQuestions && allQuestions.length > 0) {
+                    loadingMessageEl.style.display = 'none';
+                    errorMessageEl.style.display = 'none';
+                    quizContainerEl.style.display = 'block';
+                    startQuiz();
+                } else {
+                    loadingMessageEl.style.display = 'none';
+                    errorMessageEl.textContent = 'لم يتم العثور على أسئلة في الملف. يرجى التأكد من صحة تنسيق ملف questions.json.';
+                    errorMessageEl.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("خطأ في تحميل أو تحليل بيانات الأسئلة:", error);
+                loadingMessageEl.style.display = 'none';
+                errorMessageEl.innerHTML = `حدث خطأ أثناء تحميل الأسئلة: <br><small>${escapeHtml(error.message)}</small><br> يرجى مراجعة وحدة التحكم (Console) والتأكد من تشغيل خادم ويب محلي.`;
+                errorMessageEl.style.display = 'block';
+            }
+        }
+        
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            resultsContainerEl.style.display = 'none';
+            quizContainerEl.style.display = 'block'; 
+            feedbackContainerEl.style.display = 'none';
+            nextBtnEl.style.display = 'none'; 
+            loadQuestion();
+            updateScoreDisplay();
+        }
+
+        function loadQuestion() {
+            feedbackContainerEl.style.display = 'none'; 
+            feedbackContainerEl.className = 'feedback-container'; 
+            
+            if (allQuestions.length === 0) {
+                quizContainerEl.innerHTML = "<p>لا توجد أسئلة لعرضها.</p>";
+                return;
+            }
+            
+            const questionData = allQuestions[currentQuestionIndex];
+
+            questionNumberEl.textContent = `السؤال ${currentQuestionIndex + 1} من ${allQuestions.length}`;
+            questionTextEl.innerHTML = escapeHtml(questionData.questionText);
+            optionsContainerEl.innerHTML = '';
+
+            const shuffledOptions = [...questionData.options].sort(() => Math.random() - 0.5);
+
+            shuffledOptions.forEach(optionText => {
+                const button = document.createElement('button');
+                button.classList.add('option-btn');
+                button.innerHTML = escapeHtml(optionText); // Use innerHTML if options might contain simple HTML, otherwise textContent
+                button.addEventListener('click', () => selectAnswer(button, optionText, questionData.correctAnswer, questionData.correctInfo, questionData.sourceRef));
+                optionsContainerEl.appendChild(button);
+            });
+            updateProgressBar();
+            nextBtnEl.style.display = 'none';
+        }
+        
+        function selectAnswer(selectedButton, selectedOptionText, correctAnswerText, correctInfoText, sourceRefText) {
+            const allOptionButtons = optionsContainerEl.querySelectorAll('.option-btn');
+            allOptionButtons.forEach(btn => {
+                btn.disabled = true;
+                // Dim unselected options that are not the correct one if an incorrect choice was made
+                if (btn !== selectedButton && btn.innerHTML !== escapeHtml(correctAnswerText)) {
+                     btn.classList.add('disabled'); // General disabled styling
+                }
+            }); 
+
+            const formattedCorrectInfo = formatCorrectInfo(correctInfoText, sourceRefText);
+            feedbackContainerEl.style.display = 'block';
+
+
+            if (selectedOptionText === correctAnswerText) {
+                score++;
+                selectedButton.classList.remove('disabled'); // Ensure selected correct is not dimmed
+                selectedButton.classList.add('correct');
+                feedbackContainerEl.innerHTML = '✨ إجابة صحيحة!';
+                feedbackContainerEl.className = 'feedback-container correct-feedback';
+            } else {
+                selectedButton.classList.remove('disabled'); // Ensure selected incorrect is not dimmed
+                selectedButton.classList.add('incorrect');
+                feedbackContainerEl.innerHTML = `إجابة خاطئة. <div id="correct-info">${formattedCorrectInfo}</div>`;
+                feedbackContainerEl.className = 'feedback-container incorrect-feedback';
+                // Highlight the correct answer
+                allOptionButtons.forEach(btn => {
+                    if (btn.innerHTML === escapeHtml(correctAnswerText)) {
+                        btn.classList.remove('disabled');
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            updateScoreDisplay();
+            nextBtnEl.style.display = 'inline-block'; 
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplayEl.textContent = `النتيجة: ${score}`;
+        }
+        
+        function updateProgressBar() {
+            const progress = (allQuestions.length > 0) ? ((currentQuestionIndex +1) / allQuestions.length) * 100 : 0;
+            progressBarEl.style.width = `${progress}%`;
+            progressBarEl.textContent = `${Math.round(progress)}%`;
+        }
+
+        nextBtnEl.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < allQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            quizContainerEl.style.display = 'none';
+            resultsContainerEl.style.display = 'block';
+            resultsContainerEl.classList.add('pulse'); // Add pulse animation to results
+
+            const percentage = (allQuestions.length > 0) ? (score / allQuestions.length) * 100 : 0;
+            finalScoreEl.textContent = `نتيجتك النهائية هي: ${score} من ${allQuestions.length} (${Math.round(percentage)}%)`;
+            
+            let message = "";
+            if (percentage >= 90) message = "أداء مذهل! أنت خبير 🌟";
+            else if (percentage >= 75) message = "رائع جداً! معرفتك ممتازة 👍";
+            else if (percentage >= 50) message = "جيد! يمكنك تحقيق الأفضل بالمزيد من المراجعة 😊";
+            else message = "لا بأس، حاول مرة أخرى! المراجعة تصنع المعجزات 📚";
+            finalMessageEl.textContent = message;
+        }
+
+        restartQuizBtnEl.addEventListener('click', () => {
+            resultsContainerEl.classList.remove('pulse'); // Remove animation class before restarting
+            startQuiz();
+        });
+        
+        // Fetch questions when the page loads
+        document.addEventListener('DOMContentLoaded', fetchQuestions);
+
+    </script>
+</body>
+</html>
