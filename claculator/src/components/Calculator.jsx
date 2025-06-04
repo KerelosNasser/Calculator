@@ -1,23 +1,59 @@
 import { useState, useEffect } from 'react';
 
-// Button component for calculator keys
-const Button = ({ children, onClick, className = '', type = 'number' }) => {
-  // Define button styles based on type
+// Constants for better maintainability
+const OPERATIONS = {
+  ADD: '+',
+  SUBTRACT: '-',
+  MULTIPLY: '×',
+  DIVIDE: '÷',
+  EQUALS: '='
+};
+
+const BUTTON_TYPES = {
+  NUMBER: 'number',
+  OPERATOR: 'operator',
+  EQUALS: 'equals',
+  CLEAR: 'clear',
+  BACKSPACE: 'backspace',
+  FUNCTION: 'function'
+};
+
+/**
+ * Button component for calculator keys
+ * @param {Object} props - Component props
+ * @param {ReactNode} props.children - Button content
+ * @param {Function} props.onClick - Click handler
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @param {string} [props.type='number'] - Button type (number, operator, etc.)
+ * @param {string} [props.testId] - Test ID for testing
+ */
+const Button = ({ 
+  children, 
+  onClick, 
+  className = '', 
+  type = BUTTON_TYPES.NUMBER,
+  testId 
+}) => {
+  // Base button styles
   const baseStyles = 'text-xl font-medium rounded-lg transition-all duration-200 flex items-center justify-center';
   
-  // Different styles for different button types
+  // Style variants based on button type
   const typeStyles = {
-    number: 'bg-white hover:bg-gray-100 text-gray-800',
-    operator: 'bg-blue-600 hover:bg-blue-700 text-white',
-    equals: 'bg-green-500 hover:bg-green-600 text-white',
-    clear: 'bg-red-500 hover:bg-red-600 text-white',
-    backspace: 'bg-gray-200 hover:bg-gray-300 text-gray-800',
+    [BUTTON_TYPES.NUMBER]: 'bg-white hover:bg-gray-100 text-gray-800',
+    [BUTTON_TYPES.OPERATOR]: 'bg-blue-600 hover:bg-blue-700 text-white',
+    [BUTTON_TYPES.EQUALS]: 'bg-green-500 hover:bg-green-600 text-white',
+    [BUTTON_TYPES.CLEAR]: 'bg-red-500 hover:bg-red-600 text-white',
+    [BUTTON_TYPES.BACKSPACE]: 'bg-gray-200 hover:bg-gray-300 text-gray-800',
+    [BUTTON_TYPES.FUNCTION]: 'bg-gray-100 hover:bg-gray-200 text-gray-800'
   };
 
   return (
     <button
       onClick={onClick}
       className={`${baseStyles} ${typeStyles[type]} ${className} shadow-sm active:scale-95`}
+      data-testid={testId}
+      type="button"
+      aria-label={typeof children === 'string' ? children : ''}
     >
       {children}
     </button>
@@ -77,12 +113,14 @@ const Calculator = () => {
     setDisplay(display.startsWith('-') ? display.slice(1) : '-' + display);
   };
 
-  // Calculate percentage
-  const inputPercent = () => {
+  /**
+   * Converts the current display value to a percentage
+   */
+  const inputPercent = useCallback(() => {
     if (waitingForOperand) return;
     const value = parseFloat(display);
-    setDisplay(String(value / 100));
-  };
+    updateDisplay(String(value / 100));
+  }, [display, updateDisplay, waitingForOperand]);
 
   // Perform calculation
   const performOperation = (nextOperation) => {
@@ -163,37 +201,49 @@ const Calculator = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [display, previousValue, operation, waitingForOperand]);
 
-  // Format display number with commas
-  const formatNumber = (numStr) => {
-    const parts = numStr.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return parts.join('.');
-  };
+
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-      {/* Display */}
+    <div 
+      className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-md mx-auto"
+      role="application"
+      aria-label="Calculator"
+    >
+      {/* Display Section */}
       <div className="p-4 bg-gray-800 text-right">
         {/* History */}
-        <div className="min-h-6 text-sm text-gray-400 mb-1 overflow-x-auto whitespace-nowrap">
+        <div 
+          className="min-h-6 text-sm text-gray-400 mb-1 overflow-x-auto whitespace-nowrap"
+          data-testid="history"
+          aria-label="Calculation history"
+        >
           {history.length > 0 && history.join('  |  ')}
         </div>
         
         {/* Current operation */}
-        <div className="text-gray-400 text-sm h-5 mb-1">
+        <div 
+          className="text-gray-400 text-sm h-5 mb-1"
+          data-testid="operation-display"
+          aria-label="Current operation"
+        >
           {previousValue !== null && `${formatNumber(previousValue.toString())} ${operation || ''}`}
         </div>
         
         {/* Main display */}
-        <div className="text-white text-4xl font-light overflow-x-auto whitespace-nowrap">
+        <div 
+          className="text-white text-4xl font-light overflow-x-auto whitespace-nowrap"
+          data-testid="display"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {formatNumber(display)}
         </div>
       </div>
 
       {/* Keypad */}
-      <div className="grid grid-cols-4 gap-2 p-4">
+      <div className="grid grid-cols-4 gap-2 p-4" role="grid">
         {/* First row */}
-        <Button type="clear" onClick={clearAll} className="col-span-2 h-14">
+        <Button type="clear" onClick={clearAll} className="col-span-2 h-14" aria-label="Clear all">
           AC
         </Button>
         <Button type="backspace" onClick={handleBackspace} className="h-14">
@@ -241,6 +291,15 @@ const Calculator = () => {
       </div>
     </div>
   );
+};
+
+// Add PropTypes for better type checking in development
+Button.propTypes = {
+  children: PropTypes.node.isRequired,
+  onClick: PropTypes.func.isRequired,
+  className: PropTypes.string,
+  type: PropTypes.oneOf(Object.values(BUTTON_TYPES)),
+  testId: PropTypes.string
 };
 
 export default Calculator;
