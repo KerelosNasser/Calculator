@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 
 // Constants for better maintainability
 const OPERATIONS = {
@@ -60,6 +61,12 @@ const Button = ({
   );
 };
 
+/**
+ * Main Calculator component.
+ * Manages calculator state, handles user input (clicks and keyboard),
+ * performs calculations, and displays results and history.
+ * It uses Tailwind CSS for styling and aims for accessibility.
+ */
 const Calculator = () => {
   // State for calculator display and operation
   const [display, setDisplay] = useState('0');
@@ -68,18 +75,34 @@ const Calculator = () => {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [history, setHistory] = useState([]);
 
-  // Handle number input
-  const inputDigit = (digit) => {
+  /**
+   * Updates the calculator display with a new value
+   * @param {string} value - New display value
+   */
+  const updateDisplay = useCallback((value) => {
+    setDisplay(value);
+  }, []);
+
+  /**
+   * Handles input of a numerical digit.
+   * Appends the digit to the current display or replaces it if waiting for a new operand.
+   * @param {number} digit - The digit to input.
+   */
+  const inputDigit = useCallback((digit) => {
     if (waitingForOperand) {
       setDisplay(String(digit));
       setWaitingForOperand(false);
     } else {
       setDisplay(display === '0' ? String(digit) : display + digit);
     }
-  };
+  }, [display, waitingForOperand, setDisplay, setWaitingForOperand]);
 
-  // Handle decimal point
-  const inputDot = () => {
+  /**
+   * Handles input of a decimal point.
+   * Adds a decimal point to the display if one doesn't already exist.
+   * Handles cases where the calculator is waiting for a new operand.
+   */
+  const inputDot = useCallback(() => {
     if (waitingForOperand) {
       setDisplay('0.');
       setWaitingForOperand(false);
@@ -89,29 +112,37 @@ const Calculator = () => {
     if (!display.includes('.')) {
       setDisplay(display + '.');
     }
-  };
+  }, [display, waitingForOperand, setDisplay, setWaitingForOperand]);
 
-  // Clear the calculator
-  const clearAll = () => {
+  /**
+   * Clears all calculator state, resetting the display and operations.
+   */
+  const clearAll = useCallback(() => {
     setDisplay('0');
     setPreviousValue(null);
     setOperation(null);
     setWaitingForOperand(false);
-  };
+  }, [setDisplay, setPreviousValue, setOperation, setWaitingForOperand]);
 
-  // Handle backspace
-  const handleBackspace = () => {
+  /**
+   * Handles the backspace action.
+   * Removes the last character from the display if not waiting for an operand.
+   */
+  const handleBackspace = useCallback(() => {
     if (waitingForOperand) return;
     
     const newValue = display.slice(0, -1);
     setDisplay(newValue === '' ? '0' : newValue);
-  };
+  }, [display, waitingForOperand, setDisplay]);
 
-  // Toggle positive/negative
-  const toggleSign = () => {
+  /**
+   * Toggles the sign of the current display value (positive/negative).
+   * Does nothing if waiting for an operand.
+   */
+  const toggleSign = useCallback(() => {
     if (waitingForOperand) return;
     setDisplay(display.startsWith('-') ? display.slice(1) : '-' + display);
-  };
+  }, [display, waitingForOperand, setDisplay]);
 
   /**
    * Converts the current display value to a percentage
@@ -122,8 +153,13 @@ const Calculator = () => {
     updateDisplay(String(value / 100));
   }, [display, updateDisplay, waitingForOperand]);
 
-  // Perform calculation
-  const performOperation = (nextOperation) => {
+  /**
+   * Performs the calculation based on the current operation and input value.
+   * Updates the display, previous value, and history.
+   * Sets up for the next operation if one is provided.
+   * @param {string | null} nextOperation - The next operation to perform, or null if equals was pressed.
+   */
+  const performOperation = useCallback((nextOperation) => {
     const inputValue = parseFloat(display);
 
     if (previousValue === null) {
@@ -162,18 +198,37 @@ const Calculator = () => {
 
     setWaitingForOperand(true);
     setOperation(nextOperation);
-  };
+  }, [display, previousValue, operation, setDisplay, setPreviousValue, setOperation, setWaitingForOperand, setHistory]);
 
-  // Handle equals button
-  const handleEquals = () => {
+  /**
+   * Handles the equals button action.
+   * Triggers the final calculation if an operation is pending.
+   */
+  const handleEquals = useCallback(() => {
     if (operation && !waitingForOperand) {
       performOperation(null);
     }
+  }, [operation, waitingForOperand, performOperation]);
+
+  /**
+   * Formats a number string with commas for thousands separators.
+   * @param {string} numStr - The number string to format.
+   * @returns {string} The formatted number string.
+   */
+  const formatNumber = (numStr) => {
+    if (!numStr || numStr === 'Infinity' || numStr === '-Infinity' || isNaN(parseFloat(numStr))) {
+      return numStr; // Return as is if not a valid number, or is Infinity
+    }
+    const [integerPart, decimalPart] = numStr.split('.');
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
   };
 
-  // Keyboard support
-  useEffect(() => {
-    const handleKeyDown = (e) => {
+  /**
+   * Handles keyboard input for calculator operations.
+   * @param {KeyboardEvent} e - The keyboard event.
+   */
+  const handleKeyDown = useCallback((e) => {
       if (e.key >= '0' && e.key <= '9') {
         inputDigit(parseInt(e.key, 10));
       } else if (e.key === '.') {
@@ -188,18 +243,21 @@ const Calculator = () => {
       } else if (['+', '-', '*', '/'].includes(e.key)) {
         e.preventDefault();
         const opMap = {
-          '*': '×',
-          '/': '÷',
-          '+': '+',
-          '-': '-',
+          '*': OPERATIONS.MULTIPLY,
+          '/': OPERATIONS.DIVIDE,
+          '+': OPERATIONS.ADD,
+          '-': OPERATIONS.SUBTRACT,
         };
         performOperation(opMap[e.key]);
       }
-    };
+    }, [inputDigit, inputDot, handleEquals, clearAll, handleBackspace, performOperation]);
 
+  // Effect for attaching and cleaning up keyboard event listener
+  useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [display, previousValue, operation, waitingForOperand]);
+  }, [handleKeyDown]);
+
 
 
 
